@@ -1,1 +1,32 @@
+-- Create a stage to hold the CoStar API data
+CREATE STAGE costar_stage
+URL = 's3://my-bucket/costar/'
+CREDENTIALS = (AWS_KEY_ID='<access-key-id>', AWS_SECRET_KEY='<secret-access-key>');
+
+-- Create a Snowpipe to load data from the CoStar API
+CREATE PIPE costar_pipe
+AS COPY INTO costar_table
+FROM (
+  SELECT $1:property_id::NUMBER,
+         $1:address::VARCHAR,
+         $1:city::VARCHAR,
+         $1:state::VARCHAR,
+         $1:zipcode::NUMBER,
+         $1:zestimate::NUMBER,
+         $1:last_sold_price::NUMBER,
+         $1:last_sold_date::DATE
+  FROM @costar_stage
+)
+FILE_FORMAT = (TYPE = JSON);
+
+-- Create a webhook to trigger the Snowpipe
+CREATE WEBHOOK costar_webhook
+EVENT TRIGGER = ON_INSERT
+URL = 'https://api.costar.com/api/v1/properties'
+HEADERS = 'Authorization: Bearer <auth-token>'
+QUERYSTRING = 'city=:city&state=:state'
+VALIDATE_SSL_CERTIFICATE = TRUE;
+
+-- Associate the webhook with the Snowpipe
+ALTER PIPE costar_pipe SET WEBHOOK = costar_webhook;
 
