@@ -1,0 +1,217 @@
+## Markowitz Portfolio Optimization Algorithm that is based on Modern Portfolio Theory (MPT) and can be deployed: 
+-- to find the optimal combination of assets in a portfolio to maximize returns while minimizing risk. 
+-- takes into account the expected returns, volatility, and correlations of the assets in the portfolio.
+-- Use a table called `portfolio` with columns `asset`, `returns`, and `volatility`
+
+-- Calculate the covariance matrix
+SELECT COVAR_POP(returns1, returns2) AS covariance
+FROM portfolio p1
+JOIN portfolio p2 ON p1.asset <> p2.asset
+
+-- Calculate the expected return of each asset
+SELECT AVG(returns) AS expected_return
+FROM portfolio
+
+-- Use the covariance matrix and expected returns to optimize the portfolio
+-- (this can be done using a programming language like Python or R, which can be integrated with Azure/Snowflake)
+
+## Run Monte Carlo Simulation to to model the probability of different outcomes in a portfolio. 
+-- It generates multiple simulations of potential future scenarios and analyzes the results to identify the likelihood of different investment outcomes.
+-- Value at Risk (VaR): This algorithm is used to estimate the potential losses that could occur in a portfolio over a given time period. 
+-- It calculates the maximum loss that could occur at a specific confidence level.
+
+-- Assume we have a table called `portfolio` with columns `asset`, `returns`, and `volatility`
+
+-- Generate 1000 simulations of portfolio returns over the next year
+WITH simulation AS (
+  SELECT asset, 
+         AVG(returns) + volatility * RANDOM() * SQRT(1/365) AS simulated_return
+  FROM portfolio
+  GROUP BY asset
+  CROSS JOIN TABLE(GENERATOR(ROWCOUNT=>1000)) -- generate 1000 rows for each asset
+)
+
+-- Calculate the mean and standard deviation of the simulated returns for the portfolio
+SELECT AVG(simulated_return) AS mean_return, 
+       STDDEV(simulated_return) AS risk
+FROM simulation
+
+## Value at Risk (VaR): apply it to estimate the potential losses that could occur in a portfolio over a given time period. 
+-- It calculates the maximum loss that could occur at a specific confidence level.
+-- Assume we have a table called `portfolio` with columns `asset`, `returns`, and `volatility`
+
+-- Calculate the 5% VaR for the portfolio over the next year
+SELECT -1 * SQRT(1/365) * NTH_VALUE(simulated_return, 500) WITHIN GROUP (ORDER BY simulated_return ASC) AS VaR
+FROM (
+  -- Generate 10,000 simulations of portfolio returns over the next year
+  WITH simulation AS (
+    SELECT asset, 
+           AVG(returns) + volatility * RANDOM() * SQRT(1/365) AS simulated_return
+    FROM portfolio
+    GROUP BY asset
+    CROSS JOIN TABLE(GENERATOR(ROWCOUNT=>10000)) -- generate 10,000 rows for each asset
+  )
+
+  -- Calculate the simulated portfolio returns
+  SELECT SUM(simulated_return) AS portfolio_return
+  FROM simulation
+  GROUP BY ROW_NUMBER() OVER (ORDER BY (SELECT 1))
+)
+
+## Black-Litterman Model: apply to adjust the expected returns and risks of assets in a portfolio based on the investor's views and market expectations. 
+-- It combines the investor's views with the market equilibrium to generate a new set of expected returns and risks.
+-- Assume we have a table called `views` with columns `asset`, `view`, and `view_weight`
+-- and a table called `market` with columns `asset`, `market_return`, and `market_weight`
+
+-- Calculate the implied equilibrium returns
+SELECT market.asset, 
+       market_weight * market_return + SUM(view_weight * view) AS implied_return
+FROM market
+JOIN views ON market.asset = views.asset
+GROUP BY market.asset, market_weight, market_return
+
+-- Calculate the covariance matrix
+SELECT COVAR_POP(returns1, returns2) AS covariance
+FROM portfolio p1
+JOIN portfolio p2 ON p1.asset <> p2.asset
+
+-- Calculate the posterior expected returns
+SELECT implied_return + covariance * (covariance + lambda * COVAR_POP(implied_return, returns)) * (returns - implied_return) AS posterior_return
+FROM (
+  -- Calculate the current expected returns
+  SELECT AVG(returns) AS returns, asset
+  FROM portfolio
+  GROUP BY asset
+) current_returns
+JOIN (
+  -- Calculate the market weights
+  SELECT SUM(weight)
+
+
+## Bayesian Network: apply to model the relationships between different assets in a portfolio. 
+-- It analyzes the dependencies between the assets and updates the probabilities of different outcomes as new data becomes available.
+-- Assume we have a table called `portfolio` with columns `asset`, `returns`, `market_returns`, and `news_sentiment`
+
+-- Create a Bayesian network to model the dependencies between the variables
+CREATE NETWORK `portfolio_network` (
+  `asset` TEXT, 
+  `returns` NUMERIC, 
+  `market_returns` NUMERIC, 
+  `news_sentiment` NUMERIC
+) AS (
+  -- Define the relationships between the variables
+  `asset` -> `returns`,
+  `market_returns` -> `returns`,
+  `news_sentiment` -> `returns`
+);
+
+-- Train the Bayesian network using the portfolio data
+TRAIN `portfolio_network` USING (
+  SELECT asset, 
+         returns, 
+         market_returns, 
+         news_sentiment
+  FROM portfolio
+)
+
+-- Use the trained Bayesian network to make predictions or generate simulations
+-- (this can be done using a programming language like Python or R, which can be integrated with Snowflake)
+
+
+## Ensemble of Identical independent Evaluators’ topology based on: 
+-- Online Stochastic Batch learning scheme, 
+-- Portfolio Vector Memory, 
+-- Explicit reward function deployment,
+-- Eestimates such inputs as: trading period, transaction cost, price tensor, filing missing data, other parameters can be added. 
+-- Example of a three dimensional Price Tensor: 
+-- Time: This represents the period of time over which the prices are tracked. It can be divided into discrete intervals, such as days or months.
+-- Assets: This represents the set of assets in the portfolio. Each asset has its own price history, which is represented as a time series.
+-- Metrics: This represents the different metrics that are tracked for each asset, such as the opening price, closing price, high price, low price, and volume.
+
+
+import numpy as np
+
+class Portfolio:
+    def __init__(self, num_assets):
+        self.num_assets = num_assets
+        self.weights = np.random.rand(num_assets)
+        self.weights /= np.sum(self.weights)
+
+    def update_weights(self, new_weights):
+        self.weights = new_weights
+        self.weights /= np.sum(self.weights)
+
+class Ensemble:
+    def __init__(self, num_evaluators, num_assets):
+        self.num_evaluators = num_evaluators
+        self.portfolios = [Portfolio(num_assets) for _ in range(num_evaluators)]
+        self.returns = [[] for _ in range(num_evaluators)]
+        self.rewards = [[] for _ in range(num_evaluators)]
+        self.memory_size = 100
+        self.memory = np.zeros((self.memory_size, num_assets))
+        self.memory_index = 0
+
+    def update(self, price_tensor, transaction_cost):
+        for i, portfolio in enumerate(self.portfolios):
+            # Estimate the returns for the current period
+            returns = np.log(price_tensor[i + 1] / price_tensor[i])
+            # Add the returns to the evaluator's history
+            self.returns[i].append(returns)
+            # Update the memory with the new returns
+            self.memory[self.memory_index] = returns
+            self.memory_index = (self.memory_index + 1) % self.memory_size
+            # Use the memory to estimate the expected returns and covariances
+            expected_returns = np.mean(self.memory, axis=0)
+            covariances = np.cov(self.memory, rowvar=False)
+            # Use the expected returns and covariances to optimize the portfolio
+            new_weights = self.optimize(expected_returns, covariances, transaction_cost)
+            # Update the portfolio with the new weights
+            portfolio.update_weights(new_weights)
+            # Calculate the reward for the current period
+            reward = self.calculate_reward(portfolio.weights, returns, transaction_cost)
+            # Add the reward to the evaluator's history
+            self.rewards[i].append(reward)
+
+    def optimize(self, expected_returns, covariances, transaction_cost):
+        # Use the Markowitz Portfolio Optimization algorithm to optimize the portfolio
+        # based on the expected returns, covariances, and transaction cost
+        # Return the optimized weights
+        ...
+
+    def calculate_reward(self, weights, returns, transaction_cost):
+        # Use an explicit reward function to calculate the reward for the current period
+        # based on the portfolio weights, returns, and transaction cost
+        # Return the calculated reward
+        ...
+
+    def get_weights(self):
+        # Get the current weights for each evaluator
+        return [portfolio.weights for portfolio in self.portfolios]
+
+    def get_returns(self):
+        # Get the historical returns for each evaluator
+        return self.returns
+
+    def get_rewards(self):
+        # Get the historical rewards for each evaluator
+        return self.rewards
+
+# Load the dataset
+trading_period = ...
+transaction_cost = ...
+price_tensor = ...
+...
+
+# Initialize the ensemble
+num_evaluators = 10
+num_assets = price_tensor.shape[1]
+ensemble = Ensemble(num_evaluators, num_assets)
+
+# Train the ensemble on the dataset
+for i in range(trading_period):
+    # Fill in missing data for the current period
+    price_tensor[i] = fill_missing_data(price_tensor[i])
+    # Update the ensemble with the current period's data
+
+
+
