@@ -1,7 +1,7 @@
 ## Markowitz Portfolio Optimization Algorithm that is based on Modern Portfolio Theory (MPT) and can be deployed: 
 -- to find the optimal combination of assets in a portfolio to maximize returns while minimizing risk. 
 -- takes into account the expected returns, volatility, and correlations of the assets in the portfolio.
--- Use a table called `portfolio` with columns `asset`, `returns`, and `volatility`
+-- Apply table called `portfolio` with columns `asset`, `returns`, and `volatility`
 
 -- Calculate the covariance matrix
 SELECT COVAR_POP(returns1, returns2) AS covariance
@@ -20,7 +20,7 @@ FROM portfolio
 -- Value at Risk (VaR): This algorithm is used to estimate the potential losses that could occur in a portfolio over a given time period. 
 -- It calculates the maximum loss that could occur at a specific confidence level.
 
--- Assume we have a table called `portfolio` with columns `asset`, `returns`, and `volatility`
+-- Use a table called `portfolio` with columns `asset`, `returns`, and `volatility`
 
 -- Generate 1000 simulations of portfolio returns over the next year
 WITH simulation AS (
@@ -38,7 +38,7 @@ FROM simulation
 
 ## Value at Risk (VaR): apply it to estimate the potential losses that could occur in a portfolio over a given time period. 
 -- It calculates the maximum loss that could occur at a specific confidence level.
--- Assume we have a table called `portfolio` with columns `asset`, `returns`, and `volatility`
+-- Apply table called `portfolio` with columns `asset`, `returns`, and `volatility`
 
 -- Calculate the 5% VaR for the portfolio over the next year
 SELECT -1 * SQRT(1/365) * NTH_VALUE(simulated_return, 500) WITHIN GROUP (ORDER BY simulated_return ASC) AS VaR
@@ -60,8 +60,8 @@ FROM (
 
 ## Black-Litterman Model: apply to adjust the expected returns and risks of assets in a portfolio based on the investor's views and market expectations. 
 -- It combines the investor's views with the market equilibrium to generate a new set of expected returns and risks.
--- Assume we have a table called `views` with columns `asset`, `view`, and `view_weight`
--- and a table called `market` with columns `asset`, `market_return`, and `market_weight`
+-- Apply table called `views` with columns `asset`, `view`, and `view_weight`
+-- and table called `market` with columns `asset`, `market_return`, and `market_weight`
 
 -- Calculate the implied equilibrium returns
 SELECT market.asset, 
@@ -90,7 +90,7 @@ JOIN (
 
 ## Bayesian Network: apply to model the relationships between different assets in a portfolio. 
 -- It analyzes the dependencies between the assets and updates the probabilities of different outcomes as new data becomes available.
--- Assume we have a table called `portfolio` with columns `asset`, `returns`, `market_returns`, and `news_sentiment`
+-- Apply table called `portfolio` with columns `asset`, `returns`, `market_returns`, and `news_sentiment`
 
 -- Create a Bayesian network to model the dependencies between the variables
 CREATE NETWORK `portfolio_network` (
@@ -114,7 +114,7 @@ TRAIN `portfolio_network` USING (
   FROM portfolio
 )
 
--- Use the trained Bayesian network to make predictions or generate simulations
+-- Apply the trained Bayesian network to make predictions or generate simulations
 -- (this can be done using a programming language like Python or R, which can be integrated with Snowflake)
 
 
