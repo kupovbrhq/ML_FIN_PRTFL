@@ -1,0 +1,37 @@
+-- Create a table to store the Zillow API data
+CREATE TABLE zillow_data (
+    property_id NUMBER,
+    address VARCHAR,
+    city VARCHAR,
+    state VARCHAR,
+    zipcode NUMBER,
+    zestimate NUMBER,
+    last_sold_price NUMBER,
+    last_sold_date DATE
+);
+
+-- Create a Snowpipe to load data from the webhook
+CREATE PIPE zillow_pipe
+AS COPY INTO zillow_data
+FROM (
+  SELECT $1:property_id::NUMBER,
+         $1:address::VARCHAR,
+         $1:city::VARCHAR,
+         $1:state::VARCHAR,
+         $1:zipcode::NUMBER,
+         $1:zestimate::NUMBER,
+         $1:last_sold_price::NUMBER,
+         $1:last_sold_date::DATE
+  FROM @raw_stage
+)
+FILE_FORMAT = (TYPE = JSON);
+
+-- Create a webhook to trigger the Snowpipe
+CREATE WEBHOOK zillow_webhook
+EVENT TRIGGER = ON_INSERT
+URL = 'https://api.zillow.com/webservice/GetZestimate.htm'
+QUERYSTRING = 'zws-id=<your_zws_id>&address=:address&citystatezip=:citystatezip'
+VALIDATE_SSL_CERTIFICATE = FALSE;
+
+-- Associate the webhook with the Snowpipe
+ALTER PIPE zillow_pipe SET WEBHOOK = zillow_webhook;
