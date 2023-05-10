@@ -1,0 +1,26 @@
+##Methods to analyze investments into Commercial & Residential Real Estate, Private Equity, Commodities
+--  Multi-Objective Optimization: to optimize a portfolio based on multiple objectives: 
+-- maximizing returns, minimizing risk, and achieving a specific allocation to alternative investments. 
+-- Estimates Correlations between the different assets and uses mathematical algorithms to generate an optimal portfolio.
+
+
+
+
+-- Risk Parity: allocate assets in a portfolio based on their risk rather than their return. 
+-- Balance the risk of each asset in the portfolio by allocating more to assets with lower risk and less to assets with higher risk. 
+
+
+
+
+-- Trend Following: Identify trends in the market and adjust the portfolio accordingly. 
+-- Analyzes market data and identify patterns that indicate upward or downward trends. 
+-- Adjusted based on these trends to potentially capture gains or minimize losses.
+
+
+
+
+
+--CAUTION using Deep Learning Neural Networks: analyzes large amounts of data and identify patterns that can be used to make investment decisions. 
+--Learns from historical data and make predictions about future market trends and asset performance.
+
+
